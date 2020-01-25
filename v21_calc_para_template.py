@@ -42,10 +42,10 @@ print('kM = %e s^{-1}, TM = %e s' % (kM, TM))
 
 
 # Berechnung der Standard-Parameter der Übertragungsfunkion
-K = XXX
-T0 = XXX
-T1 = XXX
-T2 = XXX
+K = kV / AB
+T0 = 1 / kM
+T1 = TM
+T2 = ASp * np.sqrt(m / (g * kL)) / (2 * AB)
 print('K = %e m, T0 = %e s, T1 = %e s, T2 = %e s' % (K, T0, T1, T2))
 
 
