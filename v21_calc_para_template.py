@@ -24,14 +24,14 @@ print('eta0 = %e s^{-1}' % eta0)
 
 # Formel zur Berechnung von kL
 hDotExp = XXX  # experimentell bestimmter Wert für die Fallgeschwindigkeit des Balls in m/s
-kL = XXX
+kL = m * g * (ASp / (AB * hDotExp)) ** 2
 print('kL = %e kg/m' % kL)
 
 
 # Formel zur Berechnung von kV (Wurzel -> np.sqrt(...))
 hDotExp = XXX  # experimentell bestimmter Wert für die Steiggeschwindigkeit des Balls in m/s
 etaExp = XXX  # experimentell bestimmter Wert für die Lüfterdrehgeschwindigkeit während des Steigens in s^{-1}
-kV = XXX
+kV = (np.sqrt(m * g / kL) * ASp + AB * hDotExp) / etaExp
 print('kV = %e m^3' % kV)
 
 
