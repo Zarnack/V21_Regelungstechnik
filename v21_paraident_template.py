@@ -6,15 +6,14 @@ import scipy.optimize as sco
 import matplotlib.pyplot as plt
 
 # Wenn True werden nur u und eta über den Tastschritten angezeigt
-plot_raw_data = True
+plot_raw_data = False
 
 
 ########################### Abschnitt 2 ################################### 
 
 # Daten laden, erste Zeile auslassen, da dort Spaltennamen stehen
-Data = np.loadtxt(XXX, skiprows=1)
-
-
+Data = np.loadtxt("v21_testdaten.csv", skiprows=1)
+print(Data)
 ########################### Abschnitt 3 ###################################
 
 # Wenn plot_raw_data == True werden u und etaAbs über den Abtastschritten
@@ -23,13 +22,16 @@ if plot_raw_data:
 
     u = Data[:,6]
     etaAbs = Data[:,7]
-    
+
     plt.figure()
-    plt.plot(u, hold=True)
+    #plt.figure(figsize=(9, 9))
+    plt.plot(u)
     plt.plot(etaAbs)
     plt.legend(['u (PWM)', 'eta'])
     plt.xlabel('Index')
     plt.ylabel('u bzw. eta in U/min')
+    plt.yticks(np.arange(0, 3500, 200.0))
+    plt.xticks(np.arange(0, 210, 20.0))
     plt.show()
     
     quit()
@@ -38,19 +40,19 @@ if plot_raw_data:
 ########################### Abschnitt 4 ###################################    
 
 # Daten zurechtschneiden
-iStart = XXX
-iStop =  XXX  
+iStart = 0
+iStop = 100
 Data = Data[iStart:iStop,:]
 
 # Alle Größen in SI-Einheiten laden [t] = s, [eta] = s^{-1}!
-t = XXX
-u = XXX            # PWM-Wert der Motorspannung
-etaAbs = XXX       # Lüfterdrehzahl in s^{-1}
-etaDot = XXX       # Zeitableitung der Lüfterdrehzahl in s^{-2}
+t = Data[:, 0]
+u = Data[:, 6]            # PWM-Wert der Motorspannung
+etaAbs = Data[:, 7] * 1/60     # Lüfterdrehzahl in s^{-1}
+etaDot = Data[:, 8] *1 /60    # Zeitableitung der Lüfterdrehzahl in s^{-2}
 
 # Hilfsgrößen
-etaAbs0 = XXX      # Lüfterdrehungszahl für u = 0
-eta = XXX          # Differenz-Lüfterdrehzahl bezogen auf etaAbs0
+etaAbs0 = etaAbs[0]   # Lüfterdrehungszahl für u = 0
+eta = etaAbs - etaAbs[0]          # Differenz-Lüfterdrehzahl bezogen auf etaAbs0
 
 
 ########################### Abschnitt 5 ###################################
@@ -61,7 +63,7 @@ def pt1_sys(x, t, T_para, K_para, t_data, u_data):
     # u an der Stelle t im durch t_data und u_data definierten Verlauf
     u = u_data[max(0, len(t_data[t_data<=t])-1)]
     
-    xDot = XXX  # hier rechte Seite Dgl. implementieren     
+    xDot = (-x + K_para*u_data)/T_para  # hier rechte Seite Dgl. implementieren
     return xDot
 
 
@@ -73,19 +75,19 @@ def cost_functional_pt1(Para, t_data, u_data, eta_data):
     
     # Simulation System mit Parametern T und K für den Eingangssignalverlauf 
     # t_data, u_data, [:,0] sorgt dafür, dass etaSim ein 1-dim. Array ist
-    etaSim = sci.odeint(XXX)[:,0]  
+    etaSim = sci.odeint((K*u_data - eta_data)/T, 0, t_data, args=(K, u_data, T))[:,0]
     
     # Berechnung Kostenfunktional 
-    J = np.sum(XXX)   
+    J = np.sum((eta_data-etaSim)**2)
     return J
 
 
 ########################### Abschnitt 7 ###################################
 # Parameteridentifikation (MKQ)
 
-Phi = np.column_stack([XXX, XXX])
-y = XXX
-a = XXX     # Nutzen Sie np.linalg.inv, @, .T (siehe Anleitung)
+Phi = np.column_stack([eta, u])
+y = etaDot
+a =      # Nutzen Sie np.linalg.inv, @, .T (siehe Anleitung)
 
 # Parameter ausgeben
 T_MKQ = XXX
