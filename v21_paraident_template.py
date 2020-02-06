@@ -13,7 +13,6 @@ plot_raw_data = False
 
 # Daten laden, erste Zeile auslassen, da dort Spaltennamen stehen
 Data = np.loadtxt("v21_testdaten.csv", skiprows=1)
-print(Data)
 ########################### Abschnitt 3 ###################################
 
 # Wenn plot_raw_data == True werden u und etaAbs über den Abtastschritten
@@ -41,14 +40,14 @@ if plot_raw_data:
 
 # Daten zurechtschneiden
 iStart = 0
-iStop = 100
+iStop = 236
 Data = Data[iStart:iStop,:]
 
 # Alle Größen in SI-Einheiten laden [t] = s, [eta] = s^{-1}!
 t = Data[:, 0]
 u = Data[:, 6]            # PWM-Wert der Motorspannung
 etaAbs = Data[:, 7] * 1/60     # Lüfterdrehzahl in s^{-1}
-etaDot = Data[:, 8] *1 /60    # Zeitableitung der Lüfterdrehzahl in s^{-2}
+etaDot = Data[:, 8] * 1 /60    # Zeitableitung der Lüfterdrehzahl in s^{-2}
 
 # Hilfsgrößen
 etaAbs0 = etaAbs[0]   # Lüfterdrehungszahl für u = 0
@@ -75,7 +74,8 @@ def cost_functional_pt1(Para, t_data, u_data, eta_data):
     
     # Simulation System mit Parametern T und K für den Eingangssignalverlauf 
     # t_data, u_data, [:,0] sorgt dafür, dass etaSim ein 1-dim. Array ist
-    etaSim = sci.odeint((K*u_data - eta_data)/T, 0, t_data, args=(K, u_data, T))[:,0]
+
+    etaSim = sci.odeint(fun, np.zeros(len(eta)), t_data, args=(K, u_data, T))[:, 0]
     
     # Berechnung Kostenfunktional 
     J = np.sum((eta_data-etaSim)**2)
@@ -87,15 +87,21 @@ def cost_functional_pt1(Para, t_data, u_data, eta_data):
 
 Phi = np.column_stack([eta, u])
 y = etaDot
-a =      # Nutzen Sie np.linalg.inv, @, .T (siehe Anleitung)
+a = (np.linalg.inv(Phi.T@Phi))@Phi.T@y     # Nutzen Sie np.linalg.inv, @, .T (siehe Anleitung)
 
 # Parameter ausgeben
-T_MKQ = XXX
-km_MKQ = XXX
+T_MKQ = -1/a[0]
+km_MKQ = -a[1]/a[0]
 print('MKQ                  : T = %f ms, km = %f 1/s' % (T_MKQ*1000, km_MKQ))
 
 # Simulation des Systems mit den identifizierten Parametern
-etaSim_MKQ = sci.odeint(XXX)
+
+
+def fun(eta, t, K, u, T):
+    return (K * u - eta) / T
+
+
+etaSim_MKQ = sci.odeint(fun, eta[0], t, args=(km_MKQ, u, T_MKQ))
 
 
 ########################### Abschnitt 8 ###################################
@@ -103,14 +109,17 @@ etaSim_MKQ = sci.odeint(XXX)
     
 TInit = 0.5
 KInit = 5
-xMin = sco.fmin(XXX)
+temp = [TInit, KInit]
+xMin = sco.fmin(cost_functional_pt1, [TInit,KInit], args=(t,u,eta), disp = 1)
 
 # Parameter ausgeben
 T_Simplex, km_Simplex = xMin
 print('Simplex (Nelder-Mead): T = %f ms, km = %f 1/s' % (T_Simplex*1000, km_Simplex))
 
 # Simulation des Systems mit den identifizierten Parametern
-etaSim_Simplex = sci.odeint(XXX)
+
+
+etaSim_Simplex = sci.odeint(fun, eta[0], t, args=(T_Simplex, u, km_Simplex))
 
 
 ########################### Abschnitt 9 ###################################
